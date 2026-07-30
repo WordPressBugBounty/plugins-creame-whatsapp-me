@@ -253,7 +253,7 @@ class Joinchat {
 		}
 
 		require_once JOINCHAT_DIR . 'includes/class-joinchat-formatter.php';
-		Joinchat_Formatter::instance();
+		Joinchat_Formatter::init();
 
 		require_once JOINCHAT_DIR . 'public/class-joinchat-public.php';
 
@@ -373,6 +373,10 @@ class Joinchat {
 	 * @return   bool    True if is login page, false otherwise.
 	 */
 	private function is_login() {
-		return function_exists( 'is_login' ) ? is_login() : false !== stripos( wp_login_url(), $_SERVER['SCRIPT_NAME'] ?? '' );
+		if ( function_exists( 'is_login' ) ) {
+			return is_login();
+		}
+
+		return false !== stripos( wp_login_url(), sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_NAME'] ?? '' ) ) );
 	}
 }
