@@ -199,12 +199,13 @@ defined( 'WPINC' ) || exit;
 	};
 
 	let images_cache = {};
+	const image_not_found = '<code class="not-found"><?php echo esc_js( __( 'Image not found', 'creame-whatsapp-me' ) ); ?></code>';
 
 	const getImageTag = (src, alt, w) => {
-		if (!src) return '<code class="not-found">Image not found</code>';
+		if (!src) return image_not_found;
 
 		const width = w ? ` width="${w}"` : '';
-		const altText = alt ? ` alt="${alt}"` : '';
+		const altText = alt ? ` alt="${alt.replace(/<[^>]*>/g, '')}"` : '';
 		const cls = w <= 340 ? ' class="joinchat--inline"' : '';
 
 		if (src.endsWith('.webm') || src.endsWith('.mp4')) return `<video${cls} autoplay loop muted playsinline src="${src}"${width}></video>`;
@@ -234,7 +235,7 @@ defined( 'WPINC' ) || exit;
 		try {
 			new URL(src);
 		} catch (_) {
-			return '<code class="not-found">Image not found</code>';
+			return image_not_found;
 		}
 
 		return getImageTag(src, alt, w);
@@ -245,22 +246,24 @@ defined( 'WPINC' ) || exit;
 		str = str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 		// Transform placeholders
 		str = str.replace(/{([A-Z]+)}/g, '&lcub;$1&rcub;');
+		// Protect link and image URLs from text formats
+		str = str.replace(/\]\([^)]+\)|\{(?:LINK|BTN|IMG) [^ }]+/gu, match => match.replace(/[_*~`]/g, char => `&#${char.charCodeAt(0)};`));
 
-		str = str.replace(/(^|\W)_(.+?)_(\W|$)/gu, '$1<em>$2</em>$3');           // Italic
-		str = str.replace(/(^|\W)\*(.+?)\*(\W|$)/gu, '$1<strong>$2</strong>$3'); // Bold
-		str = str.replace(/(^|\W)~(.+?)~(\W|$)/gu, '$1<del>$2</del>$3');         // Strikethrough
-		str = str.replace(/(^|\W)`(.+?)`(\W|$)/gu, '$1<code>$2</code>$3');       // Code
+		str = str.replace(/(^|\W)_(\S(?:.*?\S)??)_(?!\w)/gu, '$1<em>$2</em>');           // Italic
+		str = str.replace(/(^|\W)\*(\S(?:.*?\S)??)\*(?!\w)/gu, '$1<strong>$2</strong>'); // Bold
+		str = str.replace(/(^|\W)~(\S(?:.*?\S)??)~(?!\w)/gu, '$1<del>$2</del>');         // Strikethrough
+		str = str.replace(/(^|\W)`(\S(?:.*?\S)??)`(?!\w)/gu, '$1<code>$2</code>');       // Code
 		str = str.replace(/\n-{3,}\n/gu, '<hr>');                                // Horizontal rule
 		str = str.replace(/\n/g, '<br>');                                        // Line breaks
 
 		// Images
-		str = str.replace(/!\[(?<alt>.*?)\]\((?<src>[^\) ]*)(?: (?<w>\d+))?\)/gu, (match, alt, src, w) => getImage(src, alt, w));
+		str = str.replace(/!\[(?<alt>[^\]]*)\]\((?<src>[^\) ]*)(?: (?<w>\d+))?\)/gu, (match, alt, src, w) => getImage(src, alt, w));
 		str = str.replace(/{IMG (?<src>[^ }]+)(?: (?<w>\d+))?(?: (?<alt>[^}]+))?}/g, (match, src, w, alt) => getImage(src, alt, w));
 
 		// Links
-		str = str.replace(/\[([^\]]+)\]\((https?:\/\/[^\s]+)\)/gu, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-		str = str.replace(/\{LINK\s+([^\s]+)\s+([^\}]+)\}/gu, '<a href="$1" target="_blank" rel="noopener">$2</a>');
-		str = str.replace(/\{BTN\s+([^\s]+)\s+([^\}]+)\}/gu, '<a href="$1" class="joinchat__btn" target="_blank" rel="noopener">$2</a>');
+		str = str.replace(/\[([^\]]+)\]\(!?(https?:\/\/[^\s]+)\)/gu, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+		str = str.replace(/\{LINK\s+!?([^\s]+)\s+([^\}]+)\}/gu, '<a href="$1" target="_blank" rel="noopener">$2</a>');
+		str = str.replace(/\{BTN\s+!?([^\s]+)\s+([^\}]+)\}/gu, '<a href="$1" class="joinchat__btn" target="_blank" rel="noopener">$2</a>');
 
 		// Random text
 		str = str.replace(/{RAND (?<text>[^}]+)}/g, (match, text) => {

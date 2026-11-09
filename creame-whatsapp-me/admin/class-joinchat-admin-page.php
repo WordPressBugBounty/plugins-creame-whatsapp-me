@@ -48,7 +48,6 @@ class Joinchat_Admin_Page {
 		}
 
 		add_action("load-{$page_hook}", function() { do_action( 'load_joinchat_settings_page' ); } ); // phpcs:ignore
-
 	}
 
 	/**
@@ -96,7 +95,6 @@ class Joinchat_Admin_Page {
 
 			add_settings_section( "joinchat_tab_{$tab}_close", '', array( $this, 'settings_tab_close' ), JOINCHAT_SLUG );
 		}
-
 	}
 
 	/**
@@ -125,7 +123,6 @@ class Joinchat_Admin_Page {
 
 		add_filter( 'admin_title', array( $this, 'admin_title' ) );
 		add_filter( 'admin_footer_text', array( $this, 'admin_footer_text' ), PHP_INT_MAX );
-
 	}
 
 	/**
@@ -270,7 +267,6 @@ class Joinchat_Admin_Page {
 
 		// Filter tab sections to add, remove or edit sections or fields.
 		return apply_filters( "joinchat_tab_{$tab}_sections", $sections );
-
 	}
 
 	/**
@@ -291,7 +287,6 @@ class Joinchat_Admin_Page {
 			esc_attr( $tab_id ),
 			esc_attr( $active_tab === $tab_id ? 'joinchat-tab-active' : '' )
 		);
-
 	}
 
 	/**
@@ -304,7 +299,6 @@ class Joinchat_Admin_Page {
 	public function settings_tab_close( $args ) {
 
 		echo '</div>';
-
 	}
 
 	/**
@@ -364,7 +358,6 @@ class Joinchat_Admin_Page {
 
 		// Filter section opening ouput.
 		echo apply_filters( 'joinchat_section_output', $output, $section_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -378,7 +371,7 @@ class Joinchat_Admin_Page {
 
 		if ( strpos( $field_id, 'view__' ) === 0 ) {
 			$field = substr( $field_id, 6 );
-			$value = isset( jc_common()->settings['visibility'][ $field ] ) ? jc_common()->settings['visibility'][ $field ] : '';
+			$value = jc_common()->settings['visibility'][ $field ] ?? '';
 
 			$output = '<label><input type="radio" name="joinchat[view][' . $field . ']" value="yes"' . checked( 'yes', $value, false ) . '> ' .
 				'<span class="dashicons dashicons-visibility" title="' . esc_attr__( 'Show', 'creame-whatsapp-me' ) . '"></span></label>' .
@@ -389,7 +382,7 @@ class Joinchat_Admin_Page {
 
 		} else {
 
-			$value = isset( jc_common()->settings[ $field_id ] ) ? jc_common()->settings[ $field_id ] : '';
+			$value = jc_common()->settings[ $field_id ] ?? '';
 
 			switch ( $field_id ) {
 				case 'telephone':
@@ -559,7 +552,6 @@ class Joinchat_Admin_Page {
 
 		// Filter field ouput.
 		echo apply_filters( 'joinchat_field_output', $output, $field_id, jc_common()->settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -599,7 +591,6 @@ class Joinchat_Admin_Page {
 			'<span class="dashicons dashicons-visibility" title="' . esc_attr__( 'Show', 'creame-whatsapp-me' ) . '"></span></label>' .
 			'<label><input type="radio" name="joinchat[view][all]" value="no"' . checked( 'no', $value, false ) . '> ' .
 			'<span class="dashicons dashicons-hidden" title="' . esc_attr__( 'Hide', 'creame-whatsapp-me' ) . '"></span></label></div>';
-
 	}
 
 	/**
@@ -620,7 +611,6 @@ class Joinchat_Admin_Page {
 			wp_kses( __( 'Open directly <em>WhatsApp Web</em>', 'creame-whatsapp-me' ), array( 'em' => array() ) ) . '</label></fieldset>';
 
 		echo apply_filters( 'joinchat_field_output', $output, 'desktop', jc_common()->settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -666,7 +656,6 @@ class Joinchat_Admin_Page {
 			'</fieldset>';
 
 		echo apply_filters( 'joinchat_field_output', $output, 'optin', jc_common()->settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -698,7 +687,6 @@ class Joinchat_Admin_Page {
 			sprintf( '<a href="%s" target="_blank">%s</a>', esc_url_raw( admin_url( 'options-privacy.php?tab=policyguide' ) ), esc_html__( 'Privacy Policy Guide' ) ) . '</small></p>'; // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
 
 		echo apply_filters( 'joinchat_field_output', $output, 'auto_open', jc_common()->settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -755,6 +743,8 @@ class Joinchat_Admin_Page {
 					'<span><strong>' . esc_html__( 'Horizontal Rule', 'creame-whatsapp-me' ) . '</strong> ➜ <code>---</code></span><br>' .
 					'<span><strong>' . esc_html__( 'Random Text', 'creame-whatsapp-me' ) . '</strong> ➜ <code>{RAND text_1||text_2||...||text_n}</code> (' . esc_html__( 'show a random option', 'creame-whatsapp-me' ) . ')</span>' .
 				'</p>' .
+				/* translators: %s: the code. */
+				'<p>' . sprintf( esc_html__( 'On links and buttons, add %s at the start of the URL to force opening in a new tab:', 'creame-whatsapp-me' ), '<code>!</code>' ) . ' <code>{BTN !https://www.example.com title}</code></p>' .
 				'<p>' . esc_html__( 'Elements can be combined. For example, for an image with link:', 'creame-whatsapp-me' ) . ' <code>{LINK https://www.example.com {IMG image.jpg}}</code></p>' .
 				'<p>' .
 					esc_html__( 'On images you can use the image url or the image ID of your Media Library.', 'creame-whatsapp-me' ) . ' ' .
@@ -852,7 +842,6 @@ class Joinchat_Admin_Page {
 			$tab_id = str_replace( '-', '_', $tab_data['id'] );
 			$screen->add_help_tab( apply_filters( "joinchat_help_tab_{$tab_id}", $tab_data ) );
 		}
-
 	}
 
 	/**
@@ -916,7 +905,6 @@ class Joinchat_Admin_Page {
 		return count( $vars ) ? '<div class="joinchat_vars_help">' . esc_html__( 'You can use vars', 'creame-whatsapp-me' ) . ' ' .
 			'<a class="joinchat-show-help" href="#" title="' . esc_attr__( 'Show Help', 'creame-whatsapp-me' ) . '">?</a><br> ' .
 			'<code>{' . join( '}</code> <code>{', $vars ) . '}</code></div>' : '';
-
 	}
 
 	/**
@@ -930,7 +918,6 @@ class Joinchat_Admin_Page {
 
 		return '<div class="joinchat_vars_help">' . esc_html__( 'Rich Chat', 'creame-whatsapp-me' ) .
 		' <a class="joinchat-show-help" href="#tab-link-rich-chat" title="' . esc_attr__( 'Show Help', 'creame-whatsapp-me' ) . '">?</a></div>';
-
 	}
 
 	/**
@@ -995,7 +982,6 @@ z-index: 9000;   put above or below other objects
 		// Enqueue Custom CSS editor.
 		$editor_settings = wp_enqueue_code_editor( array( 'type' => 'text/css' ) );
 		wp_add_inline_script( 'code-editor', 'var custom_css_settings = ' . wp_json_encode( $editor_settings ) . ';' );
-
 	}
 
 	/**
@@ -1008,7 +994,6 @@ z-index: 9000;   put above or below other objects
 	public static function admin_title( $admin_title ) {
 
 		return sprintf( '%s &lsaquo; %s', esc_html__( 'Joinchat Settings', 'creame-whatsapp-me' ), get_bloginfo( 'name' ) );
-
 	}
 
 	/**
@@ -1027,6 +1012,5 @@ z-index: 9000;   put above or below other objects
 			'<strong>Joinchat</strong>',
 			'<a href="https://wordpress.org/support/plugin/creame-whatsapp-me/reviews/#new-post" target="_blank">★★★★★</a>'
 		);
-
 	}
 }

@@ -125,7 +125,6 @@ class Joinchat_Public {
 		}
 
 		return $settings;
-
 	}
 
 	/**
@@ -180,7 +179,6 @@ class Joinchat_Public {
 		wp_register_style( $handle, false ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
 		wp_enqueue_style( $handle );
 		wp_add_inline_style( $handle, Joinchat_Util::min_css( $css ) );
-
 	}
 
 	/**
@@ -201,7 +199,6 @@ class Joinchat_Public {
 
 		wp_enqueue_style( JOINCHAT_SLUG );
 		wp_add_inline_style( JOINCHAT_SLUG, Joinchat_Util::min_css( $this->get_inline_styles() ) );
-
 	}
 
 	/**
@@ -222,7 +219,6 @@ class Joinchat_Public {
 		wp_enqueue_style( JOINCHAT_SLUG );
 		wp_add_inline_style( JOINCHAT_SLUG, Joinchat_Util::min_css( $this->get_inline_styles() ) );
 		wp_print_styles( array( JOINCHAT_SLUG ) );
-
 	}
 
 	/**
@@ -234,7 +230,6 @@ class Joinchat_Public {
 	private function can_enqueue_joinchat_style() {
 
 		return $this->show && ! wp_style_is( JOINCHAT_SLUG, 'done' );
-
 	}
 
 	/**
@@ -253,7 +248,6 @@ class Joinchat_Public {
 		$is_footer_styles      = doing_action( 'wp_footer' );
 
 		return (bool) apply_filters( 'joinchat_avoid_wp69_style_hoist', $is_wp69_classic_theme && $is_footer_styles );
-
 	}
 
 	/**
@@ -279,7 +273,6 @@ class Joinchat_Public {
 		}
 
 		return apply_filters( 'joinchat_inline_style', $inline_css, $settings );
-
 	}
 
 	/**
@@ -331,7 +324,7 @@ class Joinchat_Public {
 
 			$data = array_intersect_key( jc_common()->settings, array_flip( apply_filters( 'joinchat_script_lite_fields', $fields ) ) );
 
-			$data['message_send'] = Joinchat_Util::replace_variables( $data['message_send'], 'raw' );
+			$data['message_send'] = Joinchat_Util::replace_variables( $data['message_send'] ?? '', 'raw' );
 
 			// Enqueue lite script.
 			wp_enqueue_script( 'joinchat-lite', plugins_url( "js/joinchat-lite{$min}.js", __FILE__ ), $deps, JOINCHAT_VERSION, $args );
@@ -399,7 +392,6 @@ class Joinchat_Public {
 		}
 
 		$this->chatbox_content = apply_filters( 'joinchat_content', $content, $settings );
-
 	}
 
 	/**
@@ -451,7 +443,7 @@ class Joinchat_Public {
 		if ( $settings['show_brand'] || $is_preview ) {
 			$powered_args = array(
 				'utm_medium' => 'widget',
-				'utm_source' => rawurlencode( wp_parse_url( home_url(), PHP_URL_HOST ) ),
+				'utm_source' => rawurlencode( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ),
 			);
 			$powered_lang = false !== strpos( strtolower( get_locale() ), 'es' ) ? 'es' : 'en';
 			$powered_link = add_query_arg( $powered_args, "https://join.chat/$powered_lang/powered/" );
@@ -469,11 +461,14 @@ class Joinchat_Public {
 				$image = '<video autoplay loop muted playsinline src="' . esc_url( wp_get_attachment_url( $img_id ) ) . '"></video>';
 			} elseif ( apply_filters( 'joinchat_image_original', Joinchat_Util::is_animated_gif( $img_id ), $img_id, 'button' ) ) {
 				$image = '<img src="' . esc_url( wp_get_attachment_url( $img_id ) ) . '" alt="" loading="lazy">';
-			} elseif ( is_array( Joinchat_Util::thumb( $img_id, 58, 58 ) ) ) {
-				$thumb  = Joinchat_Util::thumb( $img_id, 58, 58 );
-				$thumb2 = Joinchat_Util::thumb( $img_id, 116, 116 );
-				$thumb3 = Joinchat_Util::thumb( $img_id, 174, 174 );
-				$image  = '<img src="' . esc_url( $thumb['url'] ) . '" srcset="' . esc_url( $thumb2['url'] ) . ' 2x, ' . esc_url( $thumb3['url'] ) . ' 3x" alt="" loading="lazy">';
+			} else {
+				$thumb = Joinchat_Util::thumb( $img_id, 58, 58 );
+
+				if ( is_array( $thumb ) ) {
+					$thumb2 = Joinchat_Util::thumb( $img_id, 116, 116 ) ?: $thumb; //phpcs:ignore WordPress.PHP.DisallowShortTernary
+					$thumb3 = Joinchat_Util::thumb( $img_id, 174, 174 ) ?: $thumb2; //phpcs:ignore WordPress.PHP.DisallowShortTernary
+					$image  = '<img src="' . esc_url( $thumb['url'] ) . '" srcset="' . esc_url( $thumb2['url'] ) . ' 2x, ' . esc_url( $thumb3['url'] ) . ' 3x" alt="" loading="lazy">';
+				}
 			}
 		}
 
@@ -530,7 +525,6 @@ class Joinchat_Public {
 		echo apply_filters( 'joinchat_html_output', $html_output, $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		do_action( 'joinchat_after_html' );
-
 	}
 
 	/**

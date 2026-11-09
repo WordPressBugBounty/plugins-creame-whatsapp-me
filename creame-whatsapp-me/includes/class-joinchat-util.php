@@ -111,20 +111,6 @@ class Joinchat_Util {
 	}
 
 	/**
-	 * Apply mb_substr() if available or fallback to substr()
-	 *
-	 * @since    3.1.0
-	 * @access   public
-	 * @param    string $str The input string.
-	 * @param    int    $start The first position used in str.
-	 * @param    int    $length The maximum length of the returned string.
-	 * @return   string     The portion of str specified by the start and length parameters
-	 */
-	public static function substr( $str, $start, $length = null ) {
-		return function_exists( 'mb_substr' ) ? mb_substr( $str, $start, $length ) : substr( $str, $start, $length );
-	}
-
-	/**
 	 * Return thumbnail url and size.
 	 *
 	 * Create thumbnail of size if not exists and return url an size info.
@@ -174,26 +160,25 @@ class Joinchat_Util {
 				);
 			} else {
 				// Fallback to original image.
-				@list($w, $h) = getimagesize( $img_path );
+				$size = @getimagesize( $img_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 
 				$thumb = array(
 					'url'    => str_replace( $uploads['basedir'], $uploads['baseurl'], $img_path ),
-					'width'  => $w,
-					'height' => $h,
+					'width'  => $size[0] ?? null,
+					'height' => $size[1] ?? null,
 				);
 			}
 		} else {
-			@list($w, $h) = getimagesize( $new_path );
+			$size = @getimagesize( $new_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 
 			$thumb = array(
 				'url'    => str_replace( $uploads['basedir'], $uploads['baseurl'], $new_path ),
-				'width'  => $w,
-				'height' => $h,
+				'width'  => $size[0] ?? null,
+				'height' => $size[1] ?? null,
 			);
 		}
 
 		return $thumb;
-
 	}
 
 	/**
@@ -213,7 +198,6 @@ class Joinchat_Util {
 		}
 
 		return false;
-
 	}
 
 	/**
@@ -276,14 +260,13 @@ class Joinchat_Util {
 
 		$replacements = self::get_variable_replacements( $context );
 
-		// Patterns as regex {VAR}.
-		$patterns = array();
+		// Use strtr() so values are literal and never replaced again.
+		$pairs = array();
 		foreach ( $replacements as $var => $replacement ) {
-			$patterns[] = "/\{$var\}/u";
+			$pairs[ '{' . $var . '}' ] = $replacement;
 		}
 
-		return preg_replace( $patterns, $replacements, $string );
-
+		return strtr( $string, $pairs );
 	}
 
 	/**
@@ -303,7 +286,7 @@ class Joinchat_Util {
 				'SITE'  => get_bloginfo( 'name' ),
 				'HOME'  => esc_url_raw( home_url() ),
 				'URL'   => esc_url_raw( user_trailingslashit( home_url( $wp->request ) ) ),
-				'HREF'  => esc_url_raw( home_url( add_query_arg( null, null ) ) ),
+				'HREF'  => esc_url_raw( home_url( add_query_arg( array() ) ) ),
 				'TITLE' => self::get_title(),
 			),
 			$context
@@ -314,7 +297,6 @@ class Joinchat_Util {
 		}
 
 		return $replacements;
-
 	}
 
 	/**
@@ -351,7 +333,6 @@ class Joinchat_Util {
 		}
 
 		return $replacement;
-
 	}
 
 	/**
@@ -385,7 +366,6 @@ class Joinchat_Util {
 		remove_filter( 'document_title_parts', $filter, 100 ); // Remove our filter.
 
 		return apply_filters( 'joinchat_get_title', $title );
-
 	}
 
 	/**
@@ -397,12 +377,9 @@ class Joinchat_Util {
 	 */
 	public static function to_json( $data ) {
 
-		$json_options = defined( 'JSON_UNESCAPED_UNICODE' ) ?
-			JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES :
-			JSON_HEX_APOS | JSON_HEX_QUOT;
+		$json_options = JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
 		return wp_json_encode( $data, apply_filters( 'joinchat_json_options', $json_options ) );
-
 	}
 
 	/**
@@ -417,7 +394,6 @@ class Joinchat_Util {
 	public static function capability( $capability = '' ) {
 
 		return apply_filters( 'joinchat_capability', $capability ?: 'manage_options' ); //phpcs:ignore WordPress.PHP.DisallowShortTernary
-
 	}
 
 	/**
@@ -430,7 +406,6 @@ class Joinchat_Util {
 	public static function options_submenu() {
 
 		return 'manage_options' === self::capability() && apply_filters( 'joinchat_submenu', false );
-
 	}
 
 	/**
@@ -444,21 +419,6 @@ class Joinchat_Util {
 	public static function admin_url( $page = JOINCHAT_SLUG ) {
 
 		return add_query_arg( 'page', $page, admin_url( self::options_submenu() ? 'options-general.php' : 'admin.php' ) );
-
-	}
-
-	/**
-	 * Can use Gutenberg
-	 *
-	 * Require at least WordPress 5.9
-	 *
-	 * @since    4.5.2
-	 * @return bool
-	 */
-	public static function can_gutenberg() {
-
-		return function_exists( 'register_block_type' ) && is_wp_version_compatible( '5.9' );
-
 	}
 
 	/**
@@ -480,7 +440,6 @@ class Joinchat_Util {
 		}
 
 		return false;
-
 	}
 
 	/**
@@ -502,7 +461,6 @@ class Joinchat_Util {
 		);
 
 		return add_query_arg( $args, "https://join.chat/$lang/$path" );
-
 	}
 
 	/**
@@ -532,7 +490,6 @@ class Joinchat_Util {
 		}
 
 		return $css;
-
 	}
 
 	/**
@@ -610,22 +567,20 @@ class Joinchat_Util {
 		$max = max( $r, $g, $b );
 		$min = min( $r, $g, $b );
 
-		$h;
-		$s;
 		$l = ( $max + $min ) / 2;
 		$d = $max - $min;
 
-		if ( $d == 0 ) {
+		if ( 0 == $d ) { // phpcs:ignore Universal.Operators.StrictComparisons
 			$h = $s = 0;
 		} else {
 			$s = $d / ( 1 - abs( 2 * $l - 1 ) );
 
-			if ( $max == $r ) {
+			if ( $max == $r ) { // phpcs:ignore Universal.Operators.StrictComparisons
 				$h = 60 * fmod( ( ( $g - $b ) / $d ), 6 );
 				if ( $b > $g ) {
 					$h += 360;
 				}
-			} elseif ( $max == $g ) {
+			} elseif ( $max == $g ) { // phpcs:ignore Universal.Operators.StrictComparisons
 				$h = 60 * ( ( $b - $r ) / $d + 2 );
 			} else {
 				$h = 60 * ( ( $r - $g ) / $d + 4 );
@@ -653,15 +608,17 @@ class JoinChatUtil {
 	 * @param string $name       function name.
 	 * @param mixed  $arguments  function arguments.
 	 * @return mixed
+	 * @throws BadMethodCallException If method does not exist in Joinchat_Util.
 	 */
 	public static function __callStatic( $name, $arguments ) {
 
 		add_action( 'admin_notices', array( __CLASS__, 'deprecated_notice' ) );
 
 		if ( method_exists( 'Joinchat_Util', $name ) ) {
-			return call_user_func_array( array( 'Joinchat_Util', $name ), $arguments );
+			return Joinchat_Util::$name( ...$arguments );
 		}
-		trigger_error( esc_html( 'Call to undefined method ' . __CLASS__ . "::$name()" ), E_USER_ERROR );
+
+		throw new BadMethodCallException( esc_html( 'Call to undefined method ' . __CLASS__ . "::$name()" ) );
 	}
 
 	public static function deprecated_notice() {
@@ -687,16 +644,5 @@ if ( ! function_exists( 'did_filter' ) ) {
 		}
 
 		return $wp_filters[ $hook_name ];
-	}
-}
-
-/**
- * Checks compatibility with the current WordPress version.
- *
- * In WordPress since 5.2.0
- */
-if ( ! function_exists( 'is_wp_version_compatible' ) ) {
-	function is_wp_version_compatible( $version ) {
-		return version_compare( get_bloginfo( 'version' ), $version, '>=' );
 	}
 }

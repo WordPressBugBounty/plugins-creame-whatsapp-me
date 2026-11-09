@@ -45,7 +45,6 @@ class Joinchat_Admin {
 		);
 
 		register_setting( JOINCHAT_SLUG, JOINCHAT_SLUG, $args );
-
 	}
 
 
@@ -73,7 +72,7 @@ class Joinchat_Admin {
 			$text = '0' === $value['color']['text'] ? '0' : '100'; // '0' => black, '100' => white.
 		} elseif ( preg_match( '/^(?<bg>#[a-f0-9]{6})(?:\/(?<text>0|100))?$/i', $value['color'], $color ) ) {
 			$bg   = $color['bg'];
-			$text = isset( $color['text'] ) ? $color['text'] : '100';
+			$text = $color['text'] ?? '100';
 		} else {
 			$bg   = '#25d366';
 			$text = '100';
@@ -89,23 +88,23 @@ class Joinchat_Admin {
 		$value['mobile_only']   = $util::yes_no( $value, 'mobile_only' );
 		$value['button_ico']    = jc_common()->get_icons( $value['button_ico'] ) ? $value['button_ico'] : 'app';
 		$value['button_image']  = (int) $value['button_image'] * ( $util::yes_no( $value, 'button_image_fixed' ) === 'yes' ? -1 : 1 );
-		$value['button_tip']    = $util::substr( $util::clean_input( $value['button_tip'] ), 0, 40 );
+		$value['button_tip']    = mb_substr( $util::clean_input( $value['button_tip'] ), 0, 40 );
 		$value['button_delay']  = (int) $value['button_delay'];
 		$value['whatsapp_web']  = $util::yes_no( $value, 'whatsapp_web' );
 		$value['qr']            = $util::yes_no( $value, 'qr' );
 		$value['message_text']  = $util::clean_input( $value['message_text'] );
 		$value['message_badge'] = $util::yes_no( $value, 'message_badge' );
 		$value['message_send']  = $util::clean_input( $value['message_send'] );
-		$value['message_start'] = $util::substr( $util::clean_input( $value['message_start'] ), 0, 40 );
+		$value['message_start'] = mb_substr( $util::clean_input( $value['message_start'] ), 0, 40 );
 		$value['message_delay'] = (int) $value['message_delay'] * ( $util::yes_no( $value, 'message_delay_on' ) === 'yes' ? 1 : -1 );
 		$value['message_views'] = (int) $value['message_views'] ? (int) $value['message_views'] : 1;
 		$value['position']      = 'left' !== $value['position'] ? 'right' : 'left';
 		$value['color']         = "$bg/$text";
 		$value['dark_mode']     = in_array( $value['dark_mode'], array( 'no', 'yes', 'auto' ), true ) ? $value['dark_mode'] : 'no';
-		$value['header']        = '__wa__' === $value['header'] ? $value['header'] : $util::substr( $util::clean_input( $value['header_custom'] ), 0, 40 );
+		$value['header']        = '__wa__' === $value['header'] ? $value['header'] : mb_substr( $util::clean_input( $value['header_custom'] ), 0, 40 );
 		$value['optin_check']   = $util::yes_no( $value, 'optin_check' );
 		$value['optin_text']    = wp_kses( $value['optin_text'], $optin_tags );
-		$value['gads']          = is_array( $value['gads'] ) ? sprintf( 'AW-%s/%s', $util::substr( $util::clean_input( $value['gads'][0] ), 0, 12 ), $util::substr( $util::clean_input( $value['gads'][1] ), 0, 22 ) ) : '';
+		$value['gads']          = is_array( $value['gads'] ) ? sprintf( 'AW-%s/%s', mb_substr( $util::clean_input( $value['gads'][0] ), 0, 12 ), mb_substr( $util::clean_input( $value['gads'][1] ), 0, 22 ) ) : '';
 		$value['gads']          = 'AW-/' !== $value['gads'] ? $value['gads'] : '';
 		$value['tracking']      = $util::yes_no( $value, 'tracking' );
 		$value['custom_css']    = trim( $util::clean_nl( $value['custom_css'] ) );
@@ -115,7 +114,7 @@ class Joinchat_Admin {
 		if ( isset( $value['view'] ) ) {
 			$value['visibility'] = array_filter(
 				$value['view'],
-				function( $v ) {
+				function ( $v ) {
 					return 'yes' === $v || 'no' === $v;
 				}
 			);
@@ -139,7 +138,6 @@ class Joinchat_Admin {
 		do_action( 'joinchat_settings_validation', $value, jc_common()->settings, JOINCHAT_SLUG );
 
 		return $value;
-
 	}
 
 	/**
@@ -162,7 +160,6 @@ class Joinchat_Admin {
 		}
 
 		wp_register_style( JOINCHAT_SLUG, plugins_url( "css/joinchat{$min}.css", __FILE__ ), $deps, JOINCHAT_VERSION, 'all' );
-
 	}
 
 	/**
@@ -206,7 +203,6 @@ class Joinchat_Admin {
 		}
 
 		wp_register_script( JOINCHAT_SLUG, plugins_url( "js/joinchat{$min}.js", __FILE__ ), $deps, JOINCHAT_VERSION, true );
-
 	}
 
 	/**
@@ -242,7 +238,6 @@ class Joinchat_Admin {
 				esc_js( wp_create_nonce( 'joinchat_nonce' ) )
 			);
 		}
-
 	}
 
 	/**
@@ -257,7 +252,6 @@ class Joinchat_Admin {
 		check_ajax_referer( 'joinchat_nonce', 'nonce', true );
 		update_option( 'joinchat_notice_dismiss', time() + MONTH_IN_SECONDS, true );
 		wp_send_json_success();
-
 	}
 
 	/**
@@ -275,7 +269,6 @@ class Joinchat_Admin {
 		array_unshift( $links, $settings_link );
 
 		return $links;
-
 	}
 
 	/**
@@ -295,7 +288,6 @@ class Joinchat_Admin {
 		}
 
 		return $plugin_meta;
-
 	}
 
 	/**
@@ -309,7 +301,7 @@ class Joinchat_Admin {
 	public function add_meta_boxes() {
 
 		$post_types  = jc_common()->get_public_post_types();
-		$back_compat = apply_filters( 'joinchat_gutenberg_sidebar', Joinchat_Util::can_gutenberg() );
+		$back_compat = apply_filters( 'joinchat_gutenberg_sidebar', true );
 
 		foreach ( $post_types as $post_type ) {
 			add_meta_box(
@@ -342,7 +334,7 @@ class Joinchat_Admin {
 		wp_enqueue_script( JOINCHAT_SLUG );
 		wp_enqueue_style( JOINCHAT_SLUG );
 
-		$metadata = get_post_meta( $post->ID, '_joinchat', true ) ?: array(); //phpcs:ignore WordPress.PHP.DisallowShortTernary
+		$metadata = get_post_meta( $post->ID, '_joinchat', true );
 		$metadata = array_merge(
 			array(
 				'telephone'    => '',
@@ -350,7 +342,7 @@ class Joinchat_Admin {
 				'message_send' => '',
 				'view'         => '',
 			),
-			$metadata
+			is_array( $metadata ) ? $metadata : array()
 		);
 
 		$placeholders = jc_common()->get_obj_placeholders( $post );
@@ -398,10 +390,10 @@ class Joinchat_Admin {
 
 		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$metadata = array(
-			'telephone'    => isset( $_POST['joinchat_telephone'] ) ? $_POST['joinchat_telephone'] : '',
-			'message_text' => isset( $_POST['joinchat_message'] ) ? $_POST['joinchat_message'] : '',
-			'message_send' => isset( $_POST['joinchat_message_send'] ) ? $_POST['joinchat_message_send'] : '',
-			'view'         => isset( $_POST['joinchat_view'] ) ? $_POST['joinchat_view'] : '',
+			'telephone'    => $_POST['joinchat_telephone'] ?? '',
+			'message_text' => $_POST['joinchat_message'] ?? '',
+			'message_send' => $_POST['joinchat_message_send'] ?? '',
+			'view'         => $_POST['joinchat_view'] ?? '',
 		);
 		// phpcs:enable
 
@@ -431,7 +423,7 @@ class Joinchat_Admin {
 		wp_enqueue_script( JOINCHAT_SLUG );
 		wp_enqueue_style( JOINCHAT_SLUG );
 
-		$metadata = get_user_meta( $user->ID, '_joinchat', true ) ?: array(); //phpcs:ignore WordPress.PHP.DisallowShortTernary
+		$metadata = get_user_meta( $user->ID, '_joinchat', true );
 		$metadata = array_merge(
 			array(
 				'telephone'    => '',
@@ -439,7 +431,7 @@ class Joinchat_Admin {
 				'message_send' => '',
 				'view'         => '',
 			),
-			$metadata
+			is_array( $metadata ) ? $metadata : array()
 		);
 
 		$placeholders = jc_common()->get_obj_placeholders( $user );
@@ -450,7 +442,6 @@ class Joinchat_Admin {
 		$metabox_output = ob_get_clean();
 
 		echo apply_filters( 'joinchat_user_metabox_output', $metabox_output, $user, $metadata ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -473,7 +464,6 @@ class Joinchat_Admin {
 		}
 
 		$this->save_meta( (int) $id, $user );
-
 	}
 
 	/**
@@ -507,7 +497,7 @@ class Joinchat_Admin {
 		wp_enqueue_script( JOINCHAT_SLUG );
 		wp_enqueue_style( JOINCHAT_SLUG );
 
-		$metadata = get_term_meta( $term->term_id, '_joinchat', true ) ?: array(); //phpcs:ignore WordPress.PHP.DisallowShortTernary
+		$metadata = get_term_meta( $term->term_id, '_joinchat', true );
 		$metadata = array_merge(
 			array(
 				'telephone'    => '',
@@ -515,7 +505,7 @@ class Joinchat_Admin {
 				'message_send' => '',
 				'view'         => '',
 			),
-			$metadata
+			is_array( $metadata ) ? $metadata : array()
 		);
 
 		$placeholders = jc_common()->get_obj_placeholders( $term );
@@ -526,7 +516,6 @@ class Joinchat_Admin {
 		$metabox_output = ob_get_clean();
 
 		echo apply_filters( 'joinchat_term_metabox_output', $metabox_output, $term, $metadata, $taxonomy ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
 	}
 
 	/**
@@ -580,12 +569,12 @@ class Joinchat_Admin {
 			$callable = (array) $callable;
 
 			if ( is_callable( $callable[0] ) ) {
-				call_user_func_array( array_shift( $callable ), $callable );
+				$callback = array_shift( $callable );
+				$callback( ...$callable );
 			} elseif ( has_action( $callable[0] ) ) {
-				call_user_func_array( 'do_action', $callable );
+				do_action( ...$callable );
 			}
 		}
-
 	}
 
 	/**
@@ -611,7 +600,6 @@ class Joinchat_Admin {
 		}
 
 		wp_add_privacy_policy_content( 'Joinchat', apply_filters( 'joinchat_privacy_message', $message ) );
-
 	}
 
 	/**
@@ -655,7 +643,6 @@ class Joinchat_Admin {
 		}
 
 		return false;
-
 	}
 
 	/**
@@ -684,6 +671,5 @@ class Joinchat_Admin {
 			'<div class="notice notice-warning is-dismissible"><p>%s</p></div>',
 			esc_html__( 'Joinchat Premium is not compatible with current Joinchat enhanced phone input. You can continue using the basic phone input. Please update Joinchat Premium to version 6.8 or later.', 'creame-whatsapp-me' )
 		);
-
 	}
 }

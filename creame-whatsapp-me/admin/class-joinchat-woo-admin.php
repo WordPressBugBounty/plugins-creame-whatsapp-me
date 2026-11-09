@@ -45,7 +45,6 @@ class Joinchat_Woo_Admin {
 		if ( defined( 'PWB_PLUGIN_FILE' ) ) { // Perfect Brands for WooCommerce.
 			$loader->add_filter( 'joinchat_term_metabox_output', $this, 'term_metabox_fix', 10, 4 );
 		}
-
 	}
 
 	/**
@@ -80,7 +79,7 @@ class Joinchat_Woo_Admin {
 		$input['message_text_product'] = Joinchat_Util::clean_input( $input['message_text_product'] );
 		$input['message_text_on_sale'] = Joinchat_Util::clean_input( $input['message_text_on_sale'] );
 		$input['message_send_product'] = Joinchat_Util::clean_input( $input['message_send_product'] );
-		$input['woo_btn_position']     = array_key_exists( $input['woo_btn_position'], $this->btn_positions() ) ? $input['woo_btn_position'] : 'none';
+		$input['woo_btn_position']     = array_key_exists( (string) ( $input['woo_btn_position'] ?? '' ), $this->btn_positions() ) ? $input['woo_btn_position'] : 'none';
 		$input['woo_btn_text']         = Joinchat_Util::clean_input( $input['woo_btn_text'] );
 
 		return $input;
@@ -119,7 +118,6 @@ class Joinchat_Woo_Admin {
 			array( 'woocommerce' => 'WooCommerce' ),
 			array_slice( $tabs, $pos )
 		);
-
 	}
 
 	/**
@@ -148,7 +146,6 @@ class Joinchat_Woo_Admin {
 		);
 
 		return array( 'none' => __( "Don't show", 'creame-whatsapp-me' ) ) + apply_filters( 'joinchat_woo_btn_positions', $positions );
-
 	}
 
 	/**
@@ -292,7 +289,7 @@ class Joinchat_Woo_Admin {
 	 */
 	public function field_ouput( $output, $field_id, $settings ) {
 
-		$value = isset( $settings[ $field_id ] ) ? $settings[ $field_id ] : '';
+		$value = $settings[ $field_id ] ?? '';
 
 		switch ( $field_id ) {
 			case 'message_text_product':
@@ -377,7 +374,6 @@ class Joinchat_Woo_Admin {
 			'</p>';
 
 		return $tab;
-
 	}
 
 	/**
@@ -450,6 +446,5 @@ class Joinchat_Woo_Admin {
 		}
 
 		return $metabox_output;
-
 	}
 }

@@ -28,6 +28,19 @@ class Joinchat_Formatter {
 	private static $initialized = false;
 
 	/**
+	 * URL characters that would trigger text formats and their placeholders.
+	 *
+	 * @since    6.4.3
+	 * @var array<string, string>
+	 */
+	private const URL_CHARS = array(
+		'_' => '&#95;',
+		'*' => '&#42;',
+		'~' => '&#126;',
+		'`' => '&#96;',
+	);
+
+	/**
 	 * Initialize the formatter hooks.
 	 *
 	 * @since    6.3.2
@@ -123,7 +136,6 @@ class Joinchat_Formatter {
 		$messages = str_replace( ' src="', ' data-src="', $messages ); // For delayed loading.
 
 		return $messages;
-
 	}
 
 	/**
@@ -135,10 +147,14 @@ class Joinchat_Formatter {
 	 */
 	public static function formatter( $replacements ) {
 
-		// MarkDown bold to WhatsApp bold.
 		$before = array(
-			'/(^|\W)\*\*(.+?)\*\*(\W|$)/u' => '$1*$2*$3',
-			'/(^|\W)__(.+?)__(\W|$)/u'     => '$1*$2*$3',
+			// Protect link and image URLs from text formats.
+			'/\]\([^)]+\)|\{(?:LINK|BTN|IMG) [^ }]+/u' => function ( $groups ) {
+				return self::protect_attr( $groups[0] );
+			},
+			// MarkDown bold to WhatsApp bold.
+			'/(^|\W)\*\*(\S(?:.*?\S)??)\*\*(?!\w)/u'   => '$1*$2*',
+			'/(^|\W)__(\S(?:.*?\S)??)__(?!\w)/u'       => '$1*$2*',
 		);
 
 		$formats = array();
@@ -147,25 +163,25 @@ class Joinchat_Formatter {
 		 * WhatsApp italic
 		 * *text* => <em>text</em>
 		 */
-		$formats['/(^|\W)_(.+?)_(\W|$)/u'] = '$1<em>$2</em>$3';
+		$formats['/(^|\W)_(\S(?:.*?\S)??)_(?!\w)/u'] = '$1<em>$2</em>';
 
 		/**
 		 * WhatsApp bold
 		 * *text* => <strong>text</strong>
 		 */
-		$formats['/(^|\W)\*(.+?)\*(\W|$)/u'] = '$1<strong>$2</strong>$3';
+		$formats['/(^|\W)\*(\S(?:.*?\S)??)\*(?!\w)/u'] = '$1<strong>$2</strong>';
 
 		/**
 		 * WhatsApp strikethrough
 		 * ~text~ => <del>text</del>
 		 */
-		$formats['/(^|\W)~(.+?)~(\W|$)/u'] = '$1<del>$2</del>$3';
+		$formats['/(^|\W)~(\S(?:.*?\S)??)~(?!\w)/u'] = '$1<del>$2</del>';
 
 		/**
 		 * Markdown code
 		 * `your code` => <code>your code</code>
 		 */
-		$formats['/(^|\W)`(.+?)`(\W|$)/u'] = '$1<code>$2</code>$3';
+		$formats['/(^|\W)`(\S(?:.*?\S)??)`(?!\w)/u'] = '$1<code>$2</code>';
 
 		/**
 		 * Markdown horizontal rule
@@ -177,7 +193,7 @@ class Joinchat_Formatter {
 		 * Markdown image
 		 * ![alt text](image.jpg width) => <img src="image.jpg" alt="alt text" width="width">
 		 */
-		$formats['/!\[(?<alt>.*?)\]\((?<src>[^\) ]*)(?: (?<w>\d+))?\)/u'] = function( $groups ) {
+		$formats['/!\[(?<alt>[^\]]*)\]\((?<src>[^\) ]*)(?: (?<w>\d+))?\)/u'] = function ( $groups ) {
 			return self::image( $groups );
 		};
 
@@ -185,7 +201,7 @@ class Joinchat_Formatter {
 		 * Markdown link
 		 * [title](https://www.example.com) => <a href="https://www.example.com">title</a>
 		 */
-		$formats['/\[(?<text>[^\[\]]+)?\]\((?<href>[^)]+)\)/u'] = function( $groups ) {
+		$formats['/\[(?<text>[^\[\]]+)?\]\((?<href>[^)]+)\)/u'] = function ( $groups ) {
 			return self::link( $groups );
 		};
 
@@ -193,7 +209,7 @@ class Joinchat_Formatter {
 		 * Joinchat image
 		 * {IMG image.jpg width alt_text} => <img src="image.jpg" alt="alt_text" width="width">
 		 */
-		$formats['/{IMG (?<src>[^ }]+)(?: (?<w>\d+))?(?: (?<alt>[^}]+))?}/u'] = function( $groups ) {
+		$formats['/{IMG (?<src>[^ }]+)(?: (?<w>\d+))?(?: (?<alt>[^}]+))?}/u'] = function ( $groups ) {
 			return self::image( $groups );
 		};
 
@@ -201,7 +217,7 @@ class Joinchat_Formatter {
 		 * Joinchat link
 		 * {LINK https://www.example.com title} => <a href="https://www.example.com">title</a>
 		 */
-		$formats['/{LINK (?<href>[^ }]+)(?: (?<text>[^}]+))?}/u'] = function( $groups ) {
+		$formats['/{LINK (?<href>[^ }]+)(?: (?<text>[^}]+))?}/u'] = function ( $groups ) {
 			return self::link( $groups );
 		};
 
@@ -209,7 +225,7 @@ class Joinchat_Formatter {
 		 * Joinchat link button
 		 * {BTN https://www.example.com title} => <a class="joinchat__btn" href="https://www.example.com">title</a>
 		 */
-		$formats['/{BTN (?<href>[^ }]+)(?: (?<text>[^}]+))?}/u'] = function( $groups ) {
+		$formats['/{BTN (?<href>[^ }]+)(?: (?<text>[^}]+))?}/u'] = function ( $groups ) {
 			return self::button( $groups );
 		};
 
@@ -217,12 +233,11 @@ class Joinchat_Formatter {
 		 * Joinchat random text
 		 * {RAND texto 1||texto 2||texto n} => "texto 1" or "texto 2" or "texto n"
 		 */
-		$formats['/{RAND (?<text>[^}]+)}/u'] = function( $groups ) {
+		$formats['/{RAND (?<text>[^}]+)}/u'] = function ( $groups ) {
 			return self::random( $groups );
 		};
 
 		return array_merge( $before, $replacements, $formats );
-
 	}
 
 	/**
@@ -238,7 +253,6 @@ class Joinchat_Formatter {
 		$restore   = array( '/&lcub;([A-Z]+)&rcub;/' => '{$1}' );
 
 		return $transform + $replacements + $restore;
-
 	}
 
 	/**
@@ -254,14 +268,19 @@ class Joinchat_Formatter {
 	 */
 	private static function link( $groups ) {
 
-		$href  = self::restore_and_replace( $groups['href'], 'raw' );
-		$text  = ! empty( $groups['text'] ) ? self::restore_and_replace( $groups['text'], 'html' ) : preg_replace( '/^https?:\/\//u', '', $href );
-		$class = ! empty( $groups['class'] ) ? ' class="' . esc_attr( $groups['class'] ) . '"' : '';
-		$rel   = '';
-		$blank = '';
+		// A leading "!" forces the link to open in a new tab.
+		$url     = self::restore_url( $groups['href'] );
+		$new_tab = '!' === substr( $url, 0, 1 );
+		$href    = self::restore_and_replace( $new_tab ? substr( $url, 1 ) : $url, 'raw' );
+		$text    = ! empty( $groups['text'] ) ? self::restore_and_replace( $groups['text'], 'html' ) : preg_replace( '/^https?:\/\//u', '', $href );
+		$class   = ! empty( $groups['class'] ) ? ' class="' . esc_attr( $groups['class'] ) . '"' : '';
+		$rel     = '';
+		$blank   = $new_tab ? ' target="_blank"' : '';
 
 		// Check if is an external link and add rel attribute for better SEO & Security.
-		if ( wp_parse_url( $href, PHP_URL_HOST ) !== wp_parse_url( get_home_url(), PHP_URL_HOST ) ) {
+		$host = wp_parse_url( $href, PHP_URL_HOST );
+
+		if ( $host && wp_parse_url( get_home_url(), PHP_URL_HOST ) !== $host ) {
 			$rel   = ' rel="external nofollow noopener noreferrer"';
 			$blank = ' target="_blank"';
 		}
@@ -269,7 +288,6 @@ class Joinchat_Formatter {
 		$output = sprintf( '<a href="%s"%s%s%s>%s</a>', esc_url( $href ), $class, $rel, $blank, $text );
 
 		return $output;
-
 	}
 
 	/**
@@ -287,7 +305,6 @@ class Joinchat_Formatter {
 		$groups['class'] = 'joinchat__btn';
 
 		return self::link( $groups );
-
 	}
 
 	/**
@@ -307,7 +324,6 @@ class Joinchat_Formatter {
 		}
 
 		return '<jc-rand>' . join( '', $texts ) . '</jc-rand>';
-
 	}
 
 	/**
@@ -331,9 +347,9 @@ class Joinchat_Formatter {
 
 		$chat_max = 340; // Chat window max width.
 
-		$src = self::restore_and_replace( $groups['src'], 'raw' );
+		$src = self::restore_and_replace( self::restore_url( $groups['src'] ), 'raw' );
 		$w   = isset( $groups['w'] ) && is_numeric( $groups['w'] ) ? $groups['w'] : $chat_max;
-		$alt = isset( $groups['alt'] ) ? self::restore_and_replace( $groups['alt'], 'attr' ) : '';
+		$alt = isset( $groups['alt'] ) ? self::restore_and_replace( wp_strip_all_tags( $groups['alt'] ), 'attr' ) : '';
 		$alt = 'alt="' . $alt . '"';
 
 		// If is post featured image.
@@ -384,7 +400,7 @@ class Joinchat_Formatter {
 		}
 
 		if ( ! count( $sizes ) ) {
-			$output = '<code class="not-found">Image not found</code>';
+			$output = '<code class="not-found">' . esc_html__( 'Image not found', 'creame-whatsapp-me' ) . '</code>';
 		} elseif ( $is_video ) {
 			$output = sprintf( '<video src="%s" %s %s autoplay loop muted playsinline></video>', $sizes[1], $width, $class );
 		} else {
@@ -395,7 +411,31 @@ class Joinchat_Formatter {
 		$output = preg_replace( '/\s+/', ' ', $output );
 
 		return $output;
+	}
 
+	/**
+	 * Keep text formats (italic, bold...) out of a URL or html attribute value.
+	 *
+	 * For replacements that output html before text formats are applied.
+	 * The browser decodes these entities when it parses the attribute.
+	 *
+	 * @since 6.4.3
+	 * @param string $value url or attribute value.
+	 * @return string
+	 */
+	public static function protect_attr( $value ) {
+		return strtr( $value, self::URL_CHARS );
+	}
+
+	/**
+	 * Restore URL characters protected from text formats.
+	 *
+	 * @since 6.4.3
+	 * @param string $url url to restore.
+	 * @return string
+	 */
+	private static function restore_url( $url ) {
+		return strtr( $url, array_flip( self::URL_CHARS ) );
 	}
 
 	/**
